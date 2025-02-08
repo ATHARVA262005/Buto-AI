@@ -4,10 +4,10 @@ import { AiOutlinePlus, AiOutlineClose } from 'react-icons/ai'
 import axios from "../config/axios";
 import { FaUserAlt } from "react-icons/fa";
 import {useNavigate} from 'react-router-dom';
-
+import { FiLogOut } from 'react-icons/fi';
 
 const Home = () => {
-    const { user } = useContext(UserContext);
+    const { user, logout } = useContext(UserContext);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [projectName, setProjectName] = useState('');
     const [project, setProject] = useState([]);
@@ -27,6 +27,11 @@ const Home = () => {
         });
     }
 
+    const handleLogout = async () => {
+        await logout();
+        navigate('/login');
+    };
+
     useEffect(() => {
         axios.get('/projects/all').then((response) => {
             setProject(response.data.projects);
@@ -40,13 +45,22 @@ const Home = () => {
             <div className="max-w-7xl mx-auto">
                 <div className="flex justify-between items-center mb-8">
                     <h1 className="text-3xl font-bold text-white">BUTO.ai</h1>
-                    <button
-                        onClick={() => setIsModalOpen(true)}
-                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition-colors"
-                    >
-                        <AiOutlinePlus className="text-xl" />
-                        New Project
-                    </button>
+                    <div className="flex gap-4">
+                        <button
+                            onClick={() => setIsModalOpen(true)}
+                            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition-colors"
+                        >
+                            <AiOutlinePlus className="text-xl" />
+                            New Project
+                        </button>
+                        <button
+                            onClick={handleLogout}
+                            title="Log out"
+                            className="flex items-center justify-center bg-red-600 hover:bg-red-700 text-white p-2 rounded-md transition-colors"
+                        >
+                            <FiLogOut className="text-xl" />
+                        </button>
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">

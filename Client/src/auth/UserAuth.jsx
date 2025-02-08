@@ -1,46 +1,31 @@
-import React, {useContext, useEffect, useState} from 'react'
-import { UserContext } from '../context/user.context'
-import { useNavigate } from 'react-router-dom'
+import React, { useContext, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { UserContext } from '../context/user.context';
 
 const UserAuth = ({ children }) => {
+    const { user, loading, checkAuth } = useContext(UserContext);
+    const navigate = useNavigate();
 
-  const { user } = useContext(UserContext)
-  const [loading, setLoading] = useState(true)
-  const token = localStorage.getItem('token')
-  const navigate = useNavigate()
+    useEffect(() => {
+        const checkAuthentication = async () => {
+            if (!user) {
+                const isAuthenticated = await checkAuth();
+                if (!isAuthenticated) {
+                    navigate('/login', { replace: true });
+                }
+            }
+        };
 
-  
-  
-  
+        if (!loading) {
+            checkAuthentication();
+        }
+    }, [loading]); // Only run when loading changes
 
-  useEffect(() => {
-    
-  if(user){
-    setLoading(false)
-  }
-
-    if (!token) {
-      navigate('/login')
+    if (loading) {
+        return <div>Loading...</div>;
     }
 
-    if (!user) {
-      navigate('/login')
-    }
-  }, [])
+    return user ? children : null;
+};
 
-  if (loading) {
-    return (
-      <div>Loading...</div>
-    )
-  }
-
-
-
-  return (
-    <>
-      {children}
-    </>
-  )
-}
-
-export default UserAuth
+export default UserAuth;
