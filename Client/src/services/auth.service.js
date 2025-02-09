@@ -105,3 +105,12 @@ export const checkAuth = async () => {
         return { success: false, error: 'Authentication failed' };
     }
 };
+
+export const signup = async (userData) => {
+    try {
+        const response = await axios.post('/auth/signup', userData);
+        return response.data;
+    } catch (error) {
+        throw new Error(error.response?.data?.message || 'Registration failed');
+    }
+};

@@ -1,7 +1,16 @@
 import React, { createContext, useState, useCallback, useEffect } from 'react';
 import axios from '../config/axios';
 
-export const UserContext = createContext(null);
+// Provide initial context value
+export const UserContext = createContext({
+    user: null,
+    login: () => {},
+    logout: () => {},
+    loading: true,
+    checkAuth: () => {},
+    updateUser: () => {},
+    isAuthenticated: false
+});
 
 export const UserProvider = ({ children }) => {
     const [user, setUser] = useState(null);
@@ -51,6 +60,16 @@ export const UserProvider = ({ children }) => {
         }
     }, []);
 
+    const updateUser = useCallback(async (userData) => {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            throw new Error('No authentication token found');
+        }
+        
+        localStorage.setItem('user', JSON.stringify(userData));
+        setUser(userData);
+    }, []);
+
     useEffect(() => {
         checkAuth();
     }, []); // Run only once on mount
@@ -62,6 +81,7 @@ export const UserProvider = ({ children }) => {
             logout,
             loading,
             checkAuth,
+            updateUser,
             isAuthenticated: !!user
         }}>
             {children}

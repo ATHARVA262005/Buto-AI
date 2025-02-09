@@ -1,31 +1,41 @@
-import React, { useContext, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { UserContext } from '../context/user.context';
+import React, { useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const UserAuth = ({ children }) => {
-    const { user, loading, checkAuth } = useContext(UserContext);
     const navigate = useNavigate();
+    const location = useLocation();
+    const token = localStorage.getItem('token');
+    const pendingVerification = localStorage.getItem('pendingVerification');
 
     useEffect(() => {
-        const checkAuthentication = async () => {
-            if (!user) {
-                const isAuthenticated = await checkAuth();
-                if (!isAuthenticated) {
-                    navigate('/login', { replace: true });
-                }
-            }
-        };
-
-        if (!loading) {
-            checkAuthentication();
+        // Do not protect verification page
+        if (location.pathname === '/verify-email') {
+            return;
         }
-    }, [loading]); // Only run when loading changes
 
-    if (loading) {
-        return <div>Loading...</div>;
+        // If user has pending verification, force them to verify email
+        if (pendingVerification) {
+            navigate('/verify-email', { replace: true });
+            return;
+        }
+
+        // For all other routes, require token
+        if (!token) {
+            navigate('/login', { replace: true });
+        }
+    }, [navigate, location.pathname, token, pendingVerification]);
+
+    // For verification page, always render
+    if (location.pathname === '/verify-email') {
+        return children;
     }
 
-    return user ? children : null;
+    // For protected routes, only render if conditions are met
+    if (!token || pendingVerification) {
+        return null;
+    }
+
+    return children;
 };
 
 export default UserAuth;

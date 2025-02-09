@@ -1,11 +1,11 @@
 // Server/routes/message.routes.js
 import { Router } from 'express';
 import * as messageService from '../services/message.service.js';
-import { authUser } from '../middleware/auth.middleware.js';
+import { authMiddleware } from '../middleware/auth.middleware.js';
 
 const router = Router();
 
-router.get('/:projectId', authUser, async (req, res) => {
+router.get('/:projectId', authMiddleware, async (req, res) => {
   try {
     const messages = await messageService.getProjectMessages(req.params.projectId);
     res.json({ messages });
@@ -15,7 +15,7 @@ router.get('/:projectId', authUser, async (req, res) => {
 });
 
 // Add new route for file history
-router.get('/:projectId/file-history', authUser, async (req, res) => {
+router.get('/:projectId/file-history', authMiddleware, async (req, res) => {
   try {
     const fileHistory = await messageService.getProjectFileHistory(req.params.projectId);
     res.json({ fileHistory });

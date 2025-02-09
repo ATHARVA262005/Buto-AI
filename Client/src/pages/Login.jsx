@@ -2,7 +2,7 @@ import React, { useState, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FiMail, FiAlertCircle, FiX } from 'react-icons/fi';
 import { UserContext } from '../context/user.context';
-import { login as loginService } from '../services/auth.service';
+import axios from '../config/axios';
 import PasswordInput from '../components/PasswordInput';
 import ErrorDisplay from '../components/ErrorDisplay';
 import { toast } from 'react-toastify';
@@ -16,33 +16,33 @@ const Login = () => {
     const [loading, setLoading] = useState(false);
 
     const handleSubmit = async (e) => {
-        if (e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
+        e.preventDefault();
+        setLoading(true);
+        setError(null);
 
-        if (!email || !password) {
-            toast.error('Please fill in all fields');
-            setError('Please fill in all fields');
-            return;
-        }
-        
         try {
-            setLoading(true);
-            setError(null);
-            const result = await loginService(email, password);
-            if (result.success) {
-                await login(result.data.user, result.data.token);
-                toast.success('Login successful!');
-                navigate('/', { replace: true });
-            } else {
-                toast.error(result.error);
-                setError(result.error);
+            const response = await axios.post('/auth/login', { email, password });
+            if (response.data.success) {
+                const { token, user } = response.data;
+                await login(user, token);
+                // If email is not verified, force redirection to verify-email page
+                if (!user.emailVerified) {
+                    toast.info('Please verify your email to proceed.');
+                    navigate('/verify-email', { replace: true });
+                    return;
+                }
+                // Use backend /status route to check subscription status
+                const statusResponse = await axios.get('/subscription/status');
+                const { status } = statusResponse.data;
+                if (status === 'active') {
+                    navigate('/', { replace: true });
+                } else {
+                    navigate('/subscription', { replace: true });
+                }
             }
-        } catch (err) {
-            const errorMessage = err.response?.data?.message || 'Invalid credentials';
-            toast.error(errorMessage);
-            setError(errorMessage);
+        } catch (error) {
+            setError(error.response?.data?.message || 'Login failed');
+            toast.error(error.response?.data?.message || 'Login failed');
         } finally {
             setLoading(false);
         }

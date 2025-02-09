@@ -7,9 +7,25 @@ import { FiMail } from 'react-icons/fi';
 function VerifyEmail() {
     const [otp, setOtp] = useState(['', '', '', '', '', '']);
     const [loading, setLoading] = useState(false);
+    const [email, setEmail] = useState('');
+    const [userId, setUserId] = useState('');
     const location = useLocation();
     const navigate = useNavigate();
-    const email = location.state?.email;
+
+    useEffect(() => {
+        const verificationData = JSON.parse(localStorage.getItem('pendingVerification'));
+        
+        if (location.state?.email && location.state?.userId) {
+            setEmail(location.state.email);
+            setUserId(location.state.userId);
+        } else if (verificationData?.email && verificationData?.userId) {
+            setEmail(verificationData.email);
+            setUserId(verificationData.userId);
+        } else {
+            toast.error('Please register first');
+            navigate('/register', { replace: true });
+        }
+    }, [location.state, navigate]);
 
     const handleChange = (element, index) => {
         if (isNaN(element.value)) return false;
@@ -22,19 +38,31 @@ function VerifyEmail() {
     };
 
     const verifyOTP = async () => {
-        if (!email) return;
-        setLoading(true);
+        if (!email || !userId) {
+            toast.error('Verification information missing');
+            return;
+        }
         
+        setLoading(true);
         try {
-            await axios.post('/auth/verify-otp', {
-                email,
-                otp: otp.join('')
+            const response = await axios.post('/auth/verify-otp', {
+                userId,
+                otp: otp.join(''),
+                email
             });
             
-            toast.success('Email verified successfully!');
-            setTimeout(() => navigate('/login'), 2000);
+            if (response.data.success) {
+                localStorage.removeItem('pendingVerification');
+                toast.success('Email verified successfully!');
+                navigate('/subscription', { 
+                    replace: true,
+                    state: { userId }
+                });
+            }
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Verification failed');
+            const errorMessage = error.response?.data?.message || 'Verification failed';
+            toast.error(errorMessage);
+            setOtp(['', '', '', '', '', '']);
         } finally {
             setLoading(false);
         }
