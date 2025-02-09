@@ -6,6 +6,7 @@ import { UserContext } from '../context/user.context';
 import PasswordInput from '../components/PasswordInput';
 import { toast } from 'react-toastify';
 import ErrorDisplay from '../components/ErrorDisplay';
+import Cookies from 'js-cookie';
 
 const Register = () => {
     const [formData, setFormData] = useState({
@@ -84,20 +85,18 @@ const Register = () => {
             });
             
             if (response.data.success) {
-                toast.success('Registration successful! Please verify your email.');
-                // Navigate to verify-email page with necessary data
-                navigate('/verify-email', {
-                    state: {
-                        userId: response.data.userId,
-                        email: formData.email
-                    }
-                });
+                toast.success('Registration successful! Please verify your email before logging in.');
+                Cookies.set('pendingVerification', JSON.stringify({
+                    userId: response.data.userId,
+                    email: formData.email
+                }), { expires: 1 });
+                navigate('/login', { replace: true }); // Changed from /verify-email to /login
             } else {
                 throw new Error(response.data.message || 'Registration failed');
             }
         } catch (error) {
             console.error('Registration error:', error);
-            toast.error(error.message || 'Failed to register');
+            toast.error(error.response?.data?.message || 'Failed to register');
         } finally {
             setLoading(false);
         }

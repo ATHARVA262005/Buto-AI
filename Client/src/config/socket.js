@@ -4,9 +4,7 @@ let socketInstance = null;
 
 export const initializeSocket = (projectId) => {
     socketInstance = socket(import.meta.env.VITE_SOCKET_URL, {
-        auth: {
-            token: localStorage.getItem('token')
-        },
+        withCredentials: true,
         query: {
             projectId
         }

@@ -5,6 +5,7 @@ import { createSubscription } from '../services/subscription.service.js';
 import jwt from 'jsonwebtoken';
 import { JWT_CONFIG } from '../config/jwt.config.js';
 import bcrypt from 'bcrypt';
+import redisClient from '../services/redis.service.js';
 
 export const signup = async (req, res) => {
     try {
@@ -220,49 +221,77 @@ export const login = async (req, res) => {
             .populate('subscription');
 
         if (!user || !await user.validatePassword(password)) {
-            return res.status(401).json({ message: 'Invalid credentials' });
-        }
-
-        if (!user.emailVerified) {
-            return res.status(403).json({ 
-                message: 'Email not verified',
-                requiresVerification: true,
-                userId: user._id
+            return res.status(401).json({ 
+                success: false,
+                message: 'Invalid credentials' 
             });
         }
 
-        const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET);
+        // Generate JWT token
+        const token = jwt.sign(
+            { userId: user._id },
+            JWT_CONFIG.secret,
+            { expiresIn: '24h' }
+        );
 
+        // Set cookie options
+        const cookieOptions = {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 24 * 60 * 60 * 1000 // 24 hours
+        };
+
+        // Set HTTP-only cookies
+        res.cookie('token', token, cookieOptions);
+        res.cookie('userId', user._id.toString(), {
+            ...cookieOptions,
+            httpOnly: false // Allow JavaScript access to userId
+        });
+
+        // Return user data without sensitive information
         res.json({
             success: true,
-            token,
             user: {
                 id: user._id,
                 email: user.email,
                 emailVerified: user.emailVerified,
-                subscription: {
-                    id: user.subscription?._id,
-                    status: user.subscription?.status
-                }
+                subscription: user.subscription
             }
         });
     } catch (error) {
-        res.status(400).json({ message: error.message });
+        console.error('Login error:', error);
+        res.status(500).json({ 
+            success: false,
+            message: 'Login failed' 
+        });
     }
 };
 
 export const getCurrentUser = async (req, res) => {
     try {
-        const user = req.user;
+        const user = await User.findById(req.user._id)
+            .populate('subscription');
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
         res.json({
             success: true,
             user: {
                 id: user._id,
                 email: user.email,
+                emailVerified: user.emailVerified || false,
+                subscription: user.subscription,
                 name: user.name
             }
         });
     } catch (error) {
+        console.error('Get current user error:', error);
         res.status(500).json({
             success: false,
             message: 'Error fetching user data'
@@ -271,11 +300,23 @@ export const getCurrentUser = async (req, res) => {
 };
 
 export const logout = async (req, res) => {
-    res.clearCookie('token');
-    res.json({
-        success: true,
-        message: 'Logged out successfully'
-    });
+    try {
+        const token = req.cookies.token;
+        // Add token to blacklist in Redis
+        await redisClient.set(`bl_${token}`, 'true', 'EX', 24 * 60 * 60);
+        // Clear the cookies
+        res.clearCookie('token', JWT_CONFIG.cookie);
+        res.clearCookie('userId', JWT_CONFIG.cookie);
+        res.json({
+            success: true,
+            message: 'Logged out successfully'
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Error during logout'
+        });
+    }
 };
 
 export const forgotPassword = async (req, res) => {

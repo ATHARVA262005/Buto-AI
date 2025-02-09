@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import axios from '../config/axios';
 import { toast } from 'react-hot-toast';
 import { FiMail } from 'react-icons/fi';
+import Cookies from 'js-cookie';
 
 function VerifyEmail() {
     const [otp, setOtp] = useState(['', '', '', '', '', '']);
@@ -13,19 +14,21 @@ function VerifyEmail() {
     const navigate = useNavigate();
 
     useEffect(() => {
-        const verificationData = JSON.parse(localStorage.getItem('pendingVerification'));
+        const verificationCookie = Cookies.get('pendingVerification');
+        const verificationData = verificationCookie ? JSON.parse(verificationCookie) : null;
         
-        if (location.state?.email && location.state?.userId) {
+        if (!verificationData?.email || !verificationData?.userId) {
+            if (!(location.state?.email && location.state?.userId)) {
+                navigate('/register', { replace: true });
+                return;
+            }
             setEmail(location.state.email);
             setUserId(location.state.userId);
-        } else if (verificationData?.email && verificationData?.userId) {
+        } else {
             setEmail(verificationData.email);
             setUserId(verificationData.userId);
-        } else {
-            toast.error('Please register first');
-            navigate('/register', { replace: true });
         }
-    }, [location.state, navigate]);
+    }, []);  // Empty dependency array
 
     const handleChange = (element, index) => {
         if (isNaN(element.value)) return false;
@@ -52,12 +55,23 @@ function VerifyEmail() {
             });
             
             if (response.data.success) {
-                localStorage.removeItem('pendingVerification');
+                Cookies.remove('pendingVerification');
                 toast.success('Email verified successfully!');
-                navigate('/subscription', { 
-                    replace: true,
-                    state: { userId }
-                });
+                
+                // Update user context immediately after verification
+                const userResponse = await axios.get('/auth/me');
+                if (userResponse.data.success) {
+                    // Check subscription status after verification
+                    const subscriptionResponse = await axios.get('/subscription/status');
+                    if (!subscriptionResponse.data.isActive) {
+                        navigate('/subscription', { 
+                            replace: true,
+                            state: { requireSubscription: true }
+                        });
+                    } else {
+                        navigate('/', { replace: true });
+                    }
+                }
             }
         } catch (error) {
             const errorMessage = error.response?.data?.message || 'Verification failed';

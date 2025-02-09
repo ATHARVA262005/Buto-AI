@@ -1,48 +1,92 @@
-import React, { useState, useContext } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useContext, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { FiMail, FiAlertCircle, FiX } from 'react-icons/fi';
 import { UserContext } from '../context/user.context';
 import axios from '../config/axios';
 import PasswordInput from '../components/PasswordInput';
 import ErrorDisplay from '../components/ErrorDisplay';
 import { toast } from 'react-toastify';
+import Cookies from 'js-cookie';
 
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const { login } = useContext(UserContext);
     const navigate = useNavigate();
+    const location = useLocation();
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        // Check for authentication on component mount
+        const checkAuthentication = async () => {
+            try {
+                const response = await axios.get('/auth/me');
+                if (response.data.success && response.data.user) {
+                    // If user is already authenticated, redirect to home
+                    navigate('/', { replace: true });
+                }
+            } catch (error) {
+                // Handle error silently as the user might not be authenticated
+                console.debug('User not authenticated');
+            }
+        };
+
+        checkAuthentication();
+    }, [navigate]);
+
+    useEffect(() => {
+        const verificationData = Cookies.get('pendingVerification');
+        if (verificationData) {
+            toast.info('Please verify your email before logging in.');
+        }
+    }, []);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
         setError(null);
-
+    
         try {
-            const response = await axios.post('/auth/login', { email, password });
+            const response = await axios.post('/auth/login', { 
+                email, 
+                password 
+            });
+    
             if (response.data.success) {
-                const { token, user } = response.data;
-                await login(user, token);
-                // If email is not verified, force redirection to verify-email page
-                if (!user.emailVerified) {
-                    toast.info('Please verify your email to proceed.');
-                    navigate('/verify-email', { replace: true });
+                const userData = response.data.user;
+                
+                // Check for pending verification first
+                const verificationData = Cookies.get('pendingVerification');
+                if (verificationData && !userData.emailVerified) {
+                    navigate('/verify-email', { 
+                        state: JSON.parse(verificationData),
+                        replace: true 
+                    });
                     return;
                 }
-                // Use backend /status route to check subscription status
-                const statusResponse = await axios.get('/subscription/status');
-                const { status } = statusResponse.data;
-                if (status === 'active') {
-                    navigate('/', { replace: true });
-                } else {
-                    navigate('/subscription', { replace: true });
+
+                // Check subscription status
+                const subscriptionResponse = await axios.get('/subscription/status');
+                if (!subscriptionResponse.data.isActive) {
+                    // Store auth token or necessary data before redirecting
+                    await login(userData);
+                    navigate('/subscription', { 
+                        replace: true,
+                        state: { requireSubscription: true }
+                    });
+                    return;
                 }
+
+                // If all checks pass, complete login
+                await login(userData);
+                const from = location.state?.from?.pathname || '/';
+                navigate(from, { replace: true });
             }
         } catch (error) {
-            setError(error.response?.data?.message || 'Login failed');
-            toast.error(error.response?.data?.message || 'Login failed');
+            const errorMessage = error.response?.data?.message || error.message || 'Login failed';
+            setError(errorMessage);
+            toast.error(errorMessage);
         } finally {
             setLoading(false);
         }

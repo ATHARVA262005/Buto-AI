@@ -1,12 +1,10 @@
 import jwt from 'jsonwebtoken';
 import { JWT_CONFIG } from '../config/jwt.config.js';
 import User from '../models/user.model.js';
-
+import redisClient from '../services/redis.service.js';
 export const authMiddleware = async (req, res, next) => {
     try {
-        let token = req.cookies.token || 
-                   (req.headers.authorization?.startsWith('Bearer ') && 
-                    req.headers.authorization.split(' ')[1]);
+        const token = req.cookies.token;
 
         if (!token) {
             return res.status(401).json({ 
@@ -15,23 +13,34 @@ export const authMiddleware = async (req, res, next) => {
             });
         }
 
+        // Check if token is blacklisted
+        const isBlacklisted = await redisClient.get(`bl_${token}`);
+        if (isBlacklisted) {
+            res.clearCookie('token');
+            return res.status(401).json({
+                success: false,
+                message: 'Token has been invalidated'
+            });
+        }
+
         const decoded = jwt.verify(token, JWT_CONFIG.secret);
-        const user = await User.findById(decoded.userId).select('-password');
+        const user = await User.findById(decoded.userId);
 
         if (!user) {
-            return res.status(401).json({ 
-                success: false, 
-                message: 'User not found' 
+            res.clearCookie('token');
+            return res.status(401).json({
+                success: false,
+                message: 'User not found'
             });
         }
 
         req.user = user;
         next();
     } catch (error) {
-        console.error('Auth Error:', error);
-        res.status(401).json({ 
-            success: false, 
-            message: 'Invalid or expired token' 
+        res.clearCookie('token');
+        res.status(401).json({
+            success: false,
+            message: 'Invalid or expired token'
         });
     }
 };

@@ -15,8 +15,8 @@ const userSchema = new mongoose.Schema({
 
     password:{
         type: String,
-        select: false,
         required: true,
+        select: false // This ensures password isn't returned in normal queries
     },
     otp: {
         code: String,  // Store plain OTP temporarily

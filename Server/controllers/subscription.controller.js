@@ -52,10 +52,36 @@ export const processPayment = async (req, res) => {
 export const getSubscriptionDetails = async (req, res) => {
     try {
         const userId = req.user._id;
-        const details = await subscriptionService.getSubscriptionDetails(userId);
+        console.log('Fetching subscription for user:', userId); // Debug log
+
+        const user = await User.findById(userId)
+            .populate('subscription')
+            .select('+subscription');
+
+        console.log('User subscription data:', user.subscription); // Debug log
+
+        if (!user.subscription) {
+            console.log('No subscription found, returning free plan'); // Debug log
+            return res.json({
+                plan: 'free',
+                status: 'active'
+            });
+        }
+
+        const details = {
+            plan: user.subscription.plan,
+            status: user.subscription.status,
+            endDate: user.subscription.endDate
+        };
+
+        console.log('Sending subscription details:', details); // Debug log
         res.json(details);
     } catch (error) {
-        res.status(400).json({ message: error.message });
+        console.error('Subscription details error:', error);
+        res.status(400).json({ 
+            success: false, 
+            message: error.message 
+        });
     }
 };
 

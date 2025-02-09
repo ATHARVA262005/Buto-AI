@@ -1,22 +1,27 @@
 import axios from 'axios';
 
 const instance = axios.create({
-    baseURL: 'http://localhost:5000/api', // adjust this to match your server URL
-    headers: {
-        'Content-Type': 'application/json',
-    },
+    baseURL: '/api',
+    withCredentials: true
 });
 
-// Add request interceptor to include token
-instance.interceptors.request.use(
-    (config) => {
-        const token = localStorage.getItem('token');
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
+instance.interceptors.response.use(
+    response => response,
+    error => {
+        // Handle authentication errors
+        if (error.response?.status === 401) {
+            // For auth check endpoint, resolve with success: false
+            if (error.config.url === '/auth/me') {
+                return Promise.resolve({ 
+                    data: { 
+                        success: false,
+                        user: null
+                    } 
+                });
+            }
+            // For other endpoints, reject with the error
+            return Promise.reject(error);
         }
-        return config;
-    },
-    (error) => {
         return Promise.reject(error);
     }
 );

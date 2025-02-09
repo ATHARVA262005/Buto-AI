@@ -4,38 +4,51 @@ import Home from '../pages/Home'
 import Login from '../pages/Login'
 import Register from '../pages/Register'
 import Project from '../pages/Project'
-import UserAuth from '../auth/UserAuth'
-import SubscriptionGuard from '../auth/SubscriptionGuard'
 import VerifyEmail from '../pages/VerifyEmail'
 import Subscription from '../pages/Subscription'
 import ForgetPassword from '../pages/ForgotPassword'
+import LoginGuard from '../components/LoginGuard'
+import ProtectedRoute from '../components/ProtectedRoute'
+import Cookies from 'js-cookie';
+import EmailVerificationGuard from '../components/EmailVerificationGuard'
+import SubscriptionGuard from '../components/SubscriptionGuard'
 
 function AppRoutes() {
   return (
     <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path='/forgot-password' element={<ForgetPassword />} />
-        <Route 
-            path="/verify-email" 
-            element={
-                localStorage.getItem('pendingVerification') ? 
-                <VerifyEmail /> : 
-                <Navigate to="/register" replace />
-            } 
-        />
-        <Route path="/" element={<UserAuth><Home /></UserAuth>} />
-        <Route 
-            path="/subscription" 
-            element={
-                <UserAuth>
-                    <SubscriptionGuard>
-                        <Subscription />
-                    </SubscriptionGuard>
-                </UserAuth>
-            } 
-        />
-        <Route path="/project" element={<UserAuth><Project /></UserAuth>} />
+        {/* Public routes */}
+        <Route path="/login" element={
+            <LoginGuard>
+                <Login />
+            </LoginGuard>
+        } />
+        <Route path="/register" element={
+            <LoginGuard>
+                <Register />
+            </LoginGuard>
+        } />
+        <Route path='/forgot-password' element={
+            <LoginGuard>
+                <ForgetPassword />
+            </LoginGuard>
+        } />
+        <Route path="/verify-email" element={<VerifyEmail />} />
+
+        {/* Protected routes */}
+        <Route path="/" element={
+            <ProtectedRoute>
+                <Home />
+            </ProtectedRoute>
+        } />
+        <Route path="/project" element={
+            <ProtectedRoute>
+                <Project />
+            </ProtectedRoute>
+        } />
+        <Route path="/subscription" element={<Subscription />} />
+
+        {/* Catch all route */}
+        <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
 }

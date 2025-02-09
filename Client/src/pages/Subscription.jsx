@@ -1,10 +1,11 @@
 import React, { useState, useContext, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { UserContext } from '../context/user.context';
 import PlanSelector from '../components/PlanSelector';
 import PaymentConfirmation from '../components/PaymentConfirmation';
 import { createSubscription, processPayment } from '../services/subscription.service';
 import { toast } from 'react-toastify';
+import axios from 'axios';
 
 const Subscription = () => {
     const [selectedPlan, setSelectedPlan] = useState(null);
@@ -12,6 +13,8 @@ const Subscription = () => {
     const [showPayment, setShowPayment] = useState(false);
     const [paymentDetails, setPaymentDetails] = useState(null);
     const navigate = useNavigate();
+    const location = useLocation();
+    const requireSubscription = location.state?.requireSubscription;
     const { user, updateUser } = useContext(UserContext);
 
     useEffect(() => {
@@ -21,6 +24,12 @@ const Subscription = () => {
             navigate('/', { replace: true });
         }
     }, [user, navigate]);
+
+    useEffect(() => {
+        if (requireSubscription) {
+            toast.info('Please select a subscription plan to continue');
+        }
+    }, [requireSubscription]);
 
     // Early return if user has active subscription
     if (user?.subscription?.status === 'active') {
@@ -38,14 +47,15 @@ const Subscription = () => {
             const response = await createSubscription(selectedPlan);
             
             if (response.success) {
-                // Update user context with new subscription data
-                await updateUser(response.user);
-                
-                toast.success('Subscription updated successfully');
-                // Force navigation to home page
-                setTimeout(() => {
+                // Get fresh user data after subscription
+                const userResponse = await axios.get('/auth/me');
+                if (userResponse.data.success) {
+                    await updateUser(userResponse.data.user);
+                    toast.success('Subscription activated successfully');
                     navigate('/', { replace: true });
-                }, 1000);
+                } else {
+                    throw new Error('Failed to update user data');
+                }
             } else {
                 throw new Error(response.message || 'Failed to update subscription');
             }
@@ -55,10 +65,6 @@ const Subscription = () => {
         } finally {
             setLoading(false);
         }
-    };
-
-    const handlePaymentConfirmed = () => {
-        navigate('/');
     };
 
     return (
