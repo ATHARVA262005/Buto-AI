@@ -139,29 +139,47 @@ const ForgotPassword = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
-            {error && <ErrorDisplay error={error} onClose={() => setError(null)} />}
-            <div className="bg-gray-800 p-8 rounded-xl shadow-2xl w-full max-w-md">
-                <h2 className="text-3xl font-bold text-white mb-6 text-center">
+        <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center p-4">
+            <div className="bg-gray-800/50 backdrop-blur-lg p-8 rounded-2xl shadow-2xl w-full max-w-md border border-gray-700/50">
+                {/* Progress Steps */}
+                <div className="flex justify-center mb-8">
+                    {[1, 2, 3].map((num) => (
+                        <div key={num} className="flex items-center">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                                step >= num ? 'bg-blue-600' : 'bg-gray-700'
+                            } transition-colors duration-300`}>
+                                <span className="text-white text-sm">{num}</span>
+                            </div>
+                            {num < 3 && (
+                                <div className={`w-12 h-0.5 ${
+                                    step > num ? 'bg-blue-600' : 'bg-gray-700'
+                                } transition-colors duration-300`}></div>
+                            )}
+                        </div>
+                    ))}
+                </div>
+
+                <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-blue-600 mb-6 text-center">
                     {step === 1 && "Reset Password"}
                     {step === 2 && "Verify OTP"}
                     {step === 3 && "New Password"}
                 </h2>
 
-                <div className="space-y-4">
-                    {error && <ErrorDisplay error={error} onClose={() => setError(null)} />}
+                {error && <ErrorDisplay error={error} onClose={() => setError(null)} />}
+
+                <div className="space-y-6">
                     {step === 1 && (
-                        <div>
-                            <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
+                        <div className="transform transition-all">
+                            <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
                                 <div>
-                                    <label className="text-gray-300 mb-2 block">Email Address</label>
-                                    <div className="relative">
-                                        <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                                    <label className="text-gray-300 mb-2 block font-medium">Email Address</label>
+                                    <div className="relative group">
+                                        <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-hover:text-blue-400 transition-colors" />
                                         <input
                                             type="email"
                                             value={email}
                                             onChange={(e) => setEmail(e.target.value)}
-                                            className="w-full pl-10 p-3 bg-gray-700 text-white rounded-lg"
+                                            className="w-full pl-10 p-3 bg-gray-700/50 text-white rounded-lg border border-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
                                             placeholder="Enter your email"
                                             required
                                         />
@@ -170,74 +188,82 @@ const ForgotPassword = () => {
                                 <button 
                                     type="button"
                                     onClick={handleSendOTP}
-                                    className="w-full bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700"
+                                    disabled={loading}
+                                    className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white p-3 rounded-lg hover:from-blue-700 hover:to-blue-800 transform transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    Send OTP
+                                    {loading ? 'Sending...' : 'Send OTP'}
                                 </button>
                             </form>
                         </div>
                     )}
 
                     {step === 2 && (
-                        <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
-                            <div>
-                                <label className="text-gray-300 mb-2 block">Enter OTP</label>
-                                <input
-                                    type="text"
-                                    value={otp}
-                                    onChange={(e) => setOtp(e.target.value)}
-                                    className="w-full p-3 bg-gray-700 text-white rounded-lg"
-                                    placeholder="Enter 6-digit OTP"
-                                    required
-                                />
-                            </div>
-                            <button 
-                                type="button"
-                                onClick={handleVerifyOTP}
-                                className="w-full bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700"
-                            >
-                                Verify OTP
-                            </button>
-                        </form>
+                        <div className="transform transition-all">
+                            <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
+                                <div>
+                                    <label className="text-gray-300 mb-2 block font-medium">Enter OTP</label>
+                                    <input
+                                        type="text"
+                                        value={otp}
+                                        onChange={(e) => setOtp(e.target.value)}
+                                        className="w-full p-3 bg-gray-700/50 text-white rounded-lg border border-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all text-center text-2xl tracking-wider"
+                                        placeholder="• • • • • •"
+                                        maxLength="6"
+                                        required
+                                    />
+                                </div>
+                                <button 
+                                    type="button"
+                                    onClick={handleVerifyOTP}
+                                    disabled={loading}
+                                    className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white p-3 rounded-lg hover:from-blue-700 hover:to-blue-800 transform transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {loading ? 'Verifying...' : 'Verify OTP'}
+                                </button>
+                            </form>
+                        </div>
                     )}
 
                     {step === 3 && (
-                        <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
-                            <div>
-                                <label className="text-gray-300 mb-2 block">New Password</label>
-                                <PasswordInput
-                                    value={newPassword}
-                                    onChange={handlePasswordChange}
-                                    placeholder="Enter new password"
-                                    required
-                                />
-                                {newPassword && (
-                                    <div className="mt-2">
-                                        <div className="flex gap-1 mb-1">
-                                            {[1,2,3,4,5].map((index) => (
-                                                <div 
-                                                    key={index}
-                                                    className={`h-1 flex-1 rounded-full ${
-                                                        index <= passwordStrength.score ? getPasswordStrengthColor() : 'bg-gray-600'
-                                                    }`}
-                                                />
-                                            ))}
+                        <div className="transform transition-all">
+                            <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
+                                <div>
+                                    <label className="text-gray-300 mb-2 block font-medium">New Password</label>
+                                    <PasswordInput
+                                        value={newPassword}
+                                        onChange={handlePasswordChange}
+                                        placeholder="Enter new password"
+                                        className="w-full p-3 bg-gray-700/50 text-white rounded-lg border border-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                                        required
+                                    />
+                                    {newPassword && (
+                                        <div className="mt-3 bg-gray-700/30 p-3 rounded-lg">
+                                            <div className="flex gap-1 mb-2">
+                                                {[1,2,3,4,5].map((index) => (
+                                                    <div 
+                                                        key={index}
+                                                        className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
+                                                            index <= passwordStrength.score ? getPasswordStrengthColor() : 'bg-gray-600'
+                                                        }`}
+                                                    />
+                                                ))}
+                                            </div>
+                                            <p className="text-sm text-gray-400">
+                                                {passwordStrength.message}
+                                            </p>
                                         </div>
-                                        <p className="text-xs text-gray-400">
-                                            {passwordStrength.message}
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-                            <button 
-                                type="button"
-                                onClick={handleResetPassword}
-                                className="w-full bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                                disabled={!passwordStrength.isStrong}
-                            >
-                                Reset Password
-                            </button>
-                        </form>
+                                    )}
+                                </div>
+                                <button 
+                                    type="button"
+                                    onClick={handleResetPassword}
+                                    disabled={!passwordStrength.isStrong || loading}
+                                    className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white p-3 rounded-lg hover:from-blue-700 hover:to-blue-800 transform transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {loading ? 'Resetting...' : 'Reset Password'}
+                                </button>
+                            </form>
+                        </div>
                     )}
                 </div>
             </div>
