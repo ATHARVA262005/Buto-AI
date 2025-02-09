@@ -9,6 +9,7 @@ import authRoutes from './routes/auth.routes.js';
 import paymentRoutes from './routes/payment.routes.js';
 import subscriptionRoutes from './routes/subscription.routes.js';
 import emailChangeRoutes from './routes/emailChange.routes.js';
+import passwordChangeRoutes from './routes/passwordChange.routes.js';
 import cookieParser from 'cookie-parser';
 import { checkSubscriptionLimits } from './middleware/subscription.middleware.js';
 import cors from 'cors';
@@ -39,6 +40,7 @@ app.use('/api/auth', authRoutes);
 
 // Add the new routes before the existing routes
 app.use('/api/email-change', emailChangeRoutes);
+app.use('/api/password-change', passwordChangeRoutes);
 
 // Add subscription checks for other routes
 app.use('/api/users', checkSubscriptionLimits, userRotes);

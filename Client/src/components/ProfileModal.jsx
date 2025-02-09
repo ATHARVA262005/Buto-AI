@@ -12,6 +12,8 @@ const ProfileModal = ({ isOpen, onClose, user, onLogout }) => {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [isPasswordVerified, setIsPasswordVerified] = useState(false);
 
   const menuItems = [
@@ -112,6 +114,73 @@ const ProfileModal = ({ isOpen, onClose, user, onLogout }) => {
     }
   };
 
+  const handlePasswordVerificationForChange = async (e) => {
+    e.preventDefault();
+    setError('');
+    
+    try {
+      const response = await fetch('/api/password-change/verify-current', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ currentPassword })
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        setIsPasswordVerified(true);
+        setMessage('Password verified. Please enter your new password.');
+      } else {
+        setError(data.message);
+      }
+    } catch (error) {
+      setError('Failed to verify password');
+    }
+  };
+
+  const handlePasswordChange = async (e) => {
+    e.preventDefault();
+    setError('');
+    setMessage('');
+
+    if (newPassword !== confirmPassword) {
+      setError('New passwords do not match');
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      setError('New password must be at least 8 characters long');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/password-change/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ 
+          currentPassword,
+          newPassword 
+        })
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        setMessage('Password changed successfully');
+        setIsPasswordVerified(false);
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+      } else {
+        setError(data.message);
+      }
+    } catch (error) {
+      setError('Failed to change password');
+    }
+  };
+
   const renderPasswordVerification = () => (
     <div className="space-y-4">
       <h3 className="text-lg font-medium text-gray-300 mb-4">Verify Your Password</h3>
@@ -134,6 +203,65 @@ const ProfileModal = ({ isOpen, onClose, user, onLogout }) => {
         </button>
       </form>
       {error && <p className="text-red-500">{error}</p>}
+    </div>
+  );
+
+  const renderPasswordChangeForm = () => (
+    <div className="space-y-4">
+      <h3 className="text-lg font-medium text-gray-300 mb-4">Change Password</h3>
+      {!isPasswordVerified ? (
+        <form onSubmit={handlePasswordVerificationForChange} className="space-y-4">
+          <div>
+            <label className="block text-sm text-gray-400 mb-1">Current Password</label>
+            <input
+              type="password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              className="w-full bg-gray-700 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            />
+          </div>
+          <button
+            type="submit"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+          >
+            Verify Password
+          </button>
+        </form>
+      ) : (
+        <form onSubmit={handlePasswordChange} className="space-y-4">
+          <div>
+            <label className="block text-sm text-gray-400 mb-1">New Password</label>
+            <input
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              className="w-full bg-gray-700 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+              minLength={8}
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-400 mb-1">Confirm New Password</label>
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="w-full bg-gray-700 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+              minLength={8}
+            />
+          </div>
+          <button
+            type="submit"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+          >
+            Change Password
+          </button>
+        </form>
+      )}
+      {error && <p className="text-red-500">{error}</p>}
+      {message && <p className="text-green-500">{message}</p>}
     </div>
   );
 
@@ -188,6 +316,8 @@ const ProfileModal = ({ isOpen, onClose, user, onLogout }) => {
     switch (activeMenu) {
       case 'Change Email':
         return isPasswordVerified ? renderEmailChangeForm() : renderPasswordVerification();
+      case 'Change Password':
+        return renderPasswordChangeForm();
       case 'General':
         return (
           <div className="space-y-6">
