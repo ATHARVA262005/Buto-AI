@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { FiX, FiSettings, FiMail, FiLock, FiLogOut } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
+import { HiOutlineSparkles } from 'react-icons/hi';
 
 const ProfileModal = ({ isOpen, onClose, user, onLogout }) => {
   if (!isOpen) return null;
@@ -340,12 +341,13 @@ const ProfileModal = ({ isOpen, onClose, user, onLogout }) => {
             </div>
 
             <div>
-              <Link
-                to="/subscription"
-                className="inline-block bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+              <button
+                onClick={() => window.location.href = '/subscription'}
+                className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-6 py-3 rounded-lg font-medium shadow-lg transform transition-all duration-200 hover:scale-[1.02] flex items-center justify-center gap-2"
               >
+                <HiOutlineSparkles className="text-xl" />
                 Upgrade Subscription
-              </Link>
+              </button>
             </div>
           </div>
         );

@@ -3,8 +3,10 @@ import { UserContext } from '../context/user.context'
 import { AiOutlinePlus, AiOutlineClose } from 'react-icons/ai'
 import { FaUserAlt } from "react-icons/fa";
 import axios from "../config/axios";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import ProfileModal from '../components/ProfileModal';
+import { BsBookmarkFill } from 'react-icons/bs';
+import BookmarkModal from '../components/BookmarkModal';
 
 const Home = () => {
     const { user, logout } = useContext(UserContext);
@@ -14,6 +16,7 @@ const Home = () => {
     const [subscriptionInfo, setSubscriptionInfo] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+    const [isBookmarkModalOpen, setIsBookmarkModalOpen] = useState(false);
 
     const navigate = useNavigate();
 
@@ -76,10 +79,17 @@ const Home = () => {
         <div className="flex gap-4">
             <button
                 onClick={() => setIsModalOpen(true)}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition-colors"
+                className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white px-6 py-2.5 rounded-lg font-medium shadow-lg transform transition-all duration-200 hover:scale-[1.02]"
             >
                 <AiOutlinePlus className="text-xl" />
                 New Project
+            </button>
+            <button
+                onClick={() => setIsBookmarkModalOpen(true)}
+                className="flex items-center justify-center bg-gray-700 hover:bg-gray-600 text-white p-2 rounded-md transition-colors"
+                title="Bookmarks"
+            >
+                <BsBookmarkFill className="text-xl" />
             </button>
             <button
                 onClick={() => setIsProfileModalOpen(true)}
@@ -153,6 +163,11 @@ const Home = () => {
                         </div>
                     </div>
                 )}
+
+                <BookmarkModal
+                    isOpen={isBookmarkModalOpen}
+                    onClose={() => setIsBookmarkModalOpen(false)}
+                />
 
                 <ProfileModal
                     isOpen={isProfileModalOpen}
